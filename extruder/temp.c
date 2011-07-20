@@ -127,8 +127,8 @@ void temp_sensor_tick() {
 						PRR0 &= ~MASK(PRSPI);
 					#endif
                     #ifdef NAL_REPRAP
-                        /* This section is compatible with the mendel original implementation of the MAX6675
-                         * not using the SPI as the MISO line is used to control our heater.
+                        /* This section is compatible with the mendel original implementation of the MAX6675.
+                         * Not using the SPI as the MISO line is used to control our heater.
                          */
 
                         WRITE(MAX6675_CS, 0); // Enable device
@@ -191,8 +191,16 @@ void temp_sensor_tick() {
 						uint8_t j, table_num;
 						//Read current temperature
 						temp = analog_read(temp_sensors[i].temp_pin);
+                        
+                        // check for open circuit
+                        if (temp ==1023){
+                           temp = 0 ; // this should convert to max temperature and ensure the heaters are turned off
+                           temp_sensors_runtime[i].temp_flags |= TCOPEN;
+                        }
+                        
 						// for thermistors the thermistor table number is in the additional field
 						table_num = temp_sensors[i].additional;
+                        
 
 						//Calculate real temperature based on lookup table
 						for (j = 1; j < NUMTEMPS; j++) {
