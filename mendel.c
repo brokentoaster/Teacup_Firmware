@@ -244,6 +244,7 @@ void init(void) {
 	// say hi to host
 	serial_writestr_P(PSTR("start\nok\n"));
 
+	power_on();
 }
 
 /// this is where it all starts, and ends
