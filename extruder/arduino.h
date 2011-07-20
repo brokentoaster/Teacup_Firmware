@@ -25,6 +25,8 @@
 	now you can simply SET_OUTPUT(STEP); WRITE(STEP, 1); WRITE(STEP, 0);
 */
 
+/// Mask a pin
+#define     _MASKIO(IO)    MASK(IO ## _PIN) 
 /// Read a pin
 #define		_READ(IO)					(IO ## _RPORT & MASK(IO ## _PIN))
 /// write to a pin
@@ -44,6 +46,8 @@
 
 //	why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
 
+/// Mask an IO  pin wrapper
+#define     MASKIO(IO)    _MASKIO(IO)
 /// Read a pin wrapper
 #define		READ(IO)					_READ(IO)
 /// Write to a pin wrapper
