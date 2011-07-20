@@ -1,4 +1,4 @@
-#include	"temp.h"
+ #include	"temp.h"
 
 /** \file
 	\brief Manage temperature sensors
@@ -76,6 +76,11 @@ void temp_init() {
 			// initialised when read
 /*			case TT_MAX6675:
 				break;*/
+                #ifdef NAL_REPRAP
+                            SET_OUTPUT(MAX6675_CS);
+                            SET_OUTPUT(MAX6675_SCK);
+                            SET_INPUT(MAX6675_SO);
+                #endif
 		#endif
 
 		#ifdef	TEMP_THERMISTOR
@@ -121,29 +126,46 @@ void temp_sensor_tick() {
 					#elif defined PRR0
 						PRR0 &= ~MASK(PRSPI);
 					#endif
+                    #ifdef NAL_REPRAP
+                        /* This section is compatible with the mendel original implementation of the MAX6675
+                         * not using the SPI as the MISO line is used to control our heater.
+                         */
 
-					SPCR = MASK(MSTR) | MASK(SPE) | MASK(SPR0);
+                        WRITE(MAX6675_CS, 0); // Enable device
 
-					// enable TT_MAX6675
-					WRITE(SS, 0);
+                        // Read in 16 bits from the MAX6675 
+                        for (uint8_t i=0; i<16; i++){
+                            WRITE(MAX6675_SCK,1);                               // Set Clock to HIGH
+                            temp <<= 1;                                         // shift left by one
+                            // Read bit  and add it to our variable
+                            temp +=  (READ(MAX6675_SO) != 0 );
+                            WRITE(MAX6675_SCK,0);                               // Set Clock to LOW
+                        }
 
-					// ensure 100ns delay - a bit extra is fine
-					delay(1);
+                        WRITE(MAX6675_CS, 1);                                   //Disable Device
+                    #else
+                        SPCR = MASK(MSTR) | MASK(SPE) | MASK(SPR0);
 
-					// read MSB
-					SPDR = 0;
-					for (;(SPSR & MASK(SPIF)) == 0;);
-					temp = SPDR;
-					temp <<= 8;
+                        // enable TT_MAX6675
+                        WRITE(SS, 0);
 
-					// read LSB
-					SPDR = 0;
-					for (;(SPSR & MASK(SPIF)) == 0;);
-					temp |= SPDR;
+                        // ensure 100ns delay - a bit extra is fine
+                        delay(1);
 
-					// disable TT_MAX6675
-					WRITE(SS, 1);
+                        // read MSB
+                        SPDR = 0;
+                        for (;(SPSR & MASK(SPIF)) == 0;);
+                        temp = SPDR;
+                        temp <<= 8;
 
+                        // read LSB
+                        SPDR = 0;
+                        for (;(SPSR & MASK(SPIF)) == 0;);
+                        temp |= SPDR;
+
+                        // disable TT_MAX6675
+                        WRITE(SS, 1);
+                    #ENDIF
 					temp_sensors_runtime[i].temp_flags = 0;
 					if ((temp & 0x8002) == 0) {
 						// got "device id"
