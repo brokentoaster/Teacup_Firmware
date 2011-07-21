@@ -72,10 +72,12 @@ AVRDUDECONF = /etc/avrdude.conf
 #                                                                            #
 ##############################################################################
 
-PROGPORT = /dev/arduino
+#PROGPORT = /dev/arduino
+PROGPORT = /dev/cuaU0
 # PROGPORT = /dev/ttyUSB0
 
-PROGBAUD = 57600
+PROGBAUD = 115200
+PROGRAMMER =avrispv2
 
 OBJ = $(patsubst %.c,%.o,${SOURCES})
 
@@ -88,7 +90,7 @@ program: $(PROGRAM).hex config.h
 	stty $(PROGBAUD) raw ignbrk hup < $(PROGPORT)
 	@sleep 0.1
 	@stty $(PROGBAUD) raw ignbrk hup < $(PROGPORT)
-	$(AVRDUDE) -cstk500v1 -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -C$(AVRDUDECONF) -U flash:w:$^
+	$(AVRDUDE) -c$(PROGRAMMER) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -U flash:w:$^
 	stty 115200 raw ignbrk -hup -echo ixoff < $(PROGPORT)
 
 clean:
