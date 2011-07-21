@@ -59,18 +59,21 @@ AVRDUDECONF = /etc/avrdude.conf
 #                                                                            #
 ##############################################################################
 
-PROGPORT = /dev/arduino
+#PROGPORT = /dev/arduino
+PROGPORT = /dev/cuaU0
 # PROGPORT = /dev/ttyUSB0
 
 # atmega168
 #PROGBAUD = 19200
 # atmega328p, 644p, 1280
-PROGBAUD = 57600
+#PROGBAUD = 57600
+#PROGBAUD = 38400
 # atmega 2560
-# PROGBAUD = 115200
+ PROGBAUD = 115200
 
 # at least mega2560 needs stk500v2
-PROGID = arduino
+#PROGID = arduino
+PROGID = avrispv2
 
 ##############################################################################
 #                                                                            #
@@ -118,20 +121,20 @@ subdirs:
 	  $(MAKE) -C $$dir; \
 	done
 
-program: $(PROGRAM).hex config.h
+program: $(PROGRAM).hex 
 	stty $(PROGBAUD) raw ignbrk hup < $(PROGPORT)
 	@sleep 0.1
 	@stty $(PROGBAUD) raw ignbrk hup < $(PROGPORT)
-	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -C$(AVRDUDECONF) -U flash:w:$^
+	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -U flash:w:$^
 	stty 115200 raw ignbrk -hup -echo ixoff < $(PROGPORT)
 
 program-fuses:
 	avr-objdump -s -j .fuse mendel.o | perl -ne '/\s0000\s([0-9a-f]{2})/ && print "$$1\n"' > lfuse
 	avr-objdump -s -j .fuse mendel.o | perl -ne '/\s0000\s..([0-9a-f]{2})/ && print "$$1\n"' > hfuse
 	avr-objdump -s -j .fuse mendel.o | perl -ne '/\s0000\s....([0-9a-f]{2})/ && print "$$1\n"' > efuse
-	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -C$(AVRDUDECONF) -U lfuse:w:lfuse
-	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -C$(AVRDUDECONF) -U hfuse:w:hfuse
-	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -C$(AVRDUDECONF) -U efuse:w:efuse
+	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -U lfuse:w:lfuse
+	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -U hfuse:w:hfuse
+	$(AVRDUDE) -c$(PROGID) -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -U efuse:w:efuse
 
 clean: clean-subdirs
 	rm -rf *.o *.elf *.lst *.map *.sym *.lss *.eep *.srec *.bin *.hex *.al *.i *.s *~ *fuse
