@@ -165,7 +165,7 @@ void temp_sensor_tick() {
 
                         // disable TT_MAX6675
                         WRITE(SS, 1);
-                    #ENDIF
+                    #endif
 					temp_sensors_runtime[i].temp_flags = 0;
 					if ((temp & 0x8002) == 0) {
 						// got "device id"
