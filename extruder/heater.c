@@ -70,11 +70,11 @@ struct {
 } heaters_runtime[NUM_HEATERS];
 
 /// default scaled P factor, equivalent to 8.0
-#define		DEFAULT_P				8192
+#define		DEFAULT_P				(5.5 * PID_SCALE)
 /// default scaled I factor, equivalent to 0.5
-#define		DEFAULT_I				512
+#define		DEFAULT_I				(0.125 * PID_SCALE)
 /// default scaled D factor, equivalent to 24
-#define		DEFAULT_D				24576
+#define		DEFAULT_D				(0 * PID_SCALE)
 /// default scaled I limit
 #define		DEFAULT_I_LIMIT	384
 
