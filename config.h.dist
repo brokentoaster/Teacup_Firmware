@@ -80,6 +80,13 @@
 #define	SEARCH_FEEDRATE_Z			50
 // no SEARCH_FEEDRATE_E, as E can't be searched
 
+/// used when returning towards home position
+/// search feedrate is very slow and maximum may be unobtainable due to
+/// acceleration not being used in the homing routines.
+#define HOME_FEEDRATE_X			100
+#define HOME_FEEDRATE_Y			100
+#define HOME_FEEDRATE_Z			75
+
 /// this is how many steps to suck back the filament by when we stop. set to zero to disable
 #define	E_STARTSTOP_STEPS			20
 
