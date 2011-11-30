@@ -169,11 +169,12 @@ const uint8_t	msbloc (uint32_t v) {
 */
 void dda_init(void) {
 	// set up default feedrate
-	current_position.F = startpoint.F = next_target.target.F = SEARCH_FEEDRATE_Z;
+	current_position.F = startpoint.F = next_target.target.F = HOME_FEEDRATE_Z;
 
 	#ifdef ACCELERATION_RAMPING
 		move_state.n = 1;
 		move_state.c = ((uint32_t)((double)F_CPU / sqrt((double)(STEPS_PER_MM_X * ACCELERATION)))) << 8;
+		//move_state.c = ((uint32_t)((double)F_CPU / 200)) << 8;
 	#endif
 }
 
