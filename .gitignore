@@ -12,7 +12,11 @@
 *.i
 *.s
 *~
-
+*.AppleDouble*
+*.cproject*
+*.project*
+*.settings*
+Release*
 temporal.png
 temporal_data
 config.h
