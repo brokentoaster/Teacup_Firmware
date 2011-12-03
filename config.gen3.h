@@ -45,21 +45,27 @@
 */
 #define	HOST
 
-/*
-	Values reflecting the gearing of your machine.
-		All numbers are fixed point integers, so no more than 3 digits to the right of the decimal point, please :-)
+/** \def STEPS_PER_M
+	steps per meter ( = steps per mm * 1000 )
 
 	calculate these values appropriate for your machine
-	for threaded rods, this is (steps motor per turn) / (pitch of the thread)
-	for belts, this is (steps per motor turn) / (number of gear teeth) / (belt module)
+
+	for threaded rods, this is
+		(steps motor per turn) / (pitch of the thread) * 1000
+
+	for belts, this is
+		(steps per motor turn) / (number of gear teeth) / (belt module) * 1000
+
 	half-stepping doubles the number, quarter stepping requires * 4, etc.
+
+	valid range = 20 to 4'0960'000 (0.02 to 40960 steps/mm)
 */
-#define	STEPS_PER_MM_X				320.000
-#define	STEPS_PER_MM_Y				320.000
-#define	STEPS_PER_MM_Z				200.000
+#define	STEPS_PER_M_X					320000
+#define	STEPS_PER_M_Y					320000
+#define	STEPS_PER_M_Z					200000
 
 /// http://blog.arcol.hu/?p=157 may help with this one
-#define	STEPS_PER_MM_E				320.000
+#define	STEPS_PER_M_E					320000
 
 
 /*
@@ -81,23 +87,28 @@
 #define	SEARCH_FEEDRATE_Z			50
 // no SEARCH_FEEDRATE_E, as E can't be searched
 
+/** \def SLOW_HOMING
+	wether to search the home point slowly
+		With some endstop configurations, like when probing for the surface of a PCB, you can't deal with overrunning the endstop. In such a case, uncomment this definition.
+*/
+// #define	SLOW_HOMING
+
 /// this is how many steps to suck back the filament by when we stop. set to zero to disable
 #define	E_STARTSTOP_STEPS			20
 
-
 /**
-	Soft axis limits, in mm
-	undefine if you don't want to use them
+	Soft axis limits, in mm.
+	Define them to your machine's size relative to what your host considers to be the origin.
 */
 
-#define	X_MIN			0.0
-#define	X_MAX			200.0
+//#define	X_MIN			0.0
+//#define	X_MAX			200.0
 
-#define	Y_MIN			0.0
-#define	Y_MAX			200.0
+//#define	Y_MIN			0.0
+//#define	Y_MAX			200.0
 
-#define	Z_MIN			0.0
-#define	Z_MAX			140.0
+//#define	Z_MIN			0.0
+//#define	Z_MAX			140.0
 
 /**	\def E_ABSOLUTE
 	Some G-Code creators produce relative length commands for the extruder, others absolute ones. G-Code using absolute lengths can be recognized when there are G92 E0 commands from time to time. If you have G92 E0 in your G-Code, define this flag.
@@ -129,9 +140,11 @@
 */
 #define ACCELERATION_RAMPING
 
-/// how fast to accelerate when using ACCELERATION_RAMPING, given in mm/s^2
-/// decimal allowed, useful range 1. to 10'000, typical range 10. to 100.
-#define ACCELERATION 10.
+/** \def ACCELERATION
+	how fast to accelerate when using ACCELERATION_RAMPING.
+		given in mm/s^2, decimal allowed, useful range 1. to 10'000. Start with 10. for milling (high precision) or 1000. for printing
+*/
+#define ACCELERATION 1000.
 
 /** \def ACCELERATION_TEMPORAL
 	temporal step algorithm
@@ -209,11 +222,14 @@
 #define	E_DIR_PIN							DIO16
 //#define E_ENABLE_PIN					xxxx
 //#define	E_INVERT_DIR
+//#define	E_INVERT_ENABLE
 
 #define	SD_CARD_DETECT				DIO2
 #define	SD_WRITE_PROTECT			DIO3
 
 #define	PS_ON_PIN							DIO14
+//#define	STEPPER_ENABLE_PIN		xxxx
+//#define	STEPPER_INVERT_ENABLE
 
 
 
@@ -236,12 +252,13 @@
 */
 #define	TEMP_RESIDENCY_TIME		60
 
-// which temperature sensors are you using? (intercom is the gen3-style separate extruder board)
+/// which temperature sensors are you using? List every type of sensor you use here once, to enable the appropriate code. Intercom is the gen3-style separate extruder board.
 // #define	TEMP_MAX6675
 // #define	TEMP_THERMISTOR
 // #define	TEMP_AD595
 // #define	TEMP_PT100
 #define	TEMP_INTERCOM
+// #define	TEMP_NONE
 
 /***************************************************************************\
 *                                                                           *
@@ -250,7 +267,7 @@
 * for GEN3 set temp_type to TT_INTERCOM and temp_pin to 0                   *
 *                                                                           *
 * Types are same as TEMP_ list above- TT_MAX6675, TT_THERMISTOR, TT_AD595,  *
-*   TT_PT100, TT_INTERCOM. See list in temp.c.                              *
+*   TT_PT100, TT_INTERCOM, TT_NONE. See list in temp.c.                     *
 *                                                                           *
 \***************************************************************************/
 
@@ -298,6 +315,10 @@ DEFINE_TEMP_SENSOR(bed,			TT_INTERCOM,	1,		0)
 *                                                                           *
 * Some common names are 'extruder', 'bed', 'fan', 'motor'                   *
 *                                                                           *
+* A milling spindle can also be defined as a heater. Attach it to a         *
+* temperature sensor of TT_NONE, then you can control the spindle's rpm     *
+* via temperature commands. M104 S1..255 for spindle on, M104 S0 for off.   *
+*                                                                           *
 \***************************************************************************/
 
 #ifndef DEFINE_HEATER
@@ -342,7 +363,8 @@ DEFINE_TEMP_SENSOR(bed,			TT_INTERCOM,	1,		0)
 	Undefine it for best human readability, set it to an old date for compatibility with hosts before August 2010
 */
 // #define REPRAP_HOST_COMPATIBILITY 19750101
-#define REPRAP_HOST_COMPATIBILITY 20100806
+// #define REPRAP_HOST_COMPATIBILITY 20100806
+// #define REPRAP_HOST_COMPATIBILITY 20110509
 // #define REPRAP_HOST_COMPATIBILITY <date of next RepRap Host compatibility break>
 
 /**
@@ -397,7 +419,7 @@ DEFINE_TEMP_SENSOR(bed,			TT_INTERCOM,	1,		0)
 
 /** \def DC_EXTRUDER
 	DC extruder
-		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above
+		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above.
 */
 // #define	DC_EXTRUDER HEATER_motor
 // #define	DC_EXTRUDER_PWM	180
@@ -427,6 +449,12 @@ DEFINE_TEMP_SENSOR(bed,			TT_INTERCOM,	1,		0)
 
 /// this is the scaling of internally stored PID values. 1024L is a good value
 #define	PID_SCALE						1024L
+
+/** \def ENDSTOP_STEPS
+	number of steps to run into the endstops intentionally
+		As Endstops trigger false alarm sometimes, Teacup debounces them by counting a number of consecutive positives. Valid range is 1...255. Use 4 or less for reliable endstops, 8 or even more for flaky ones.
+*/
+#define	ENDSTOP_STEPS	4
 
 
 

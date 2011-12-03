@@ -41,8 +41,6 @@ volatile uint8_t	clock_flag_10ms = 0;
 volatile uint8_t	clock_flag_250ms = 0;
 volatile uint8_t	clock_flag_1s = 0;
 
-volatile uint8_t	timer1_compa_deferred_enable = 0;
-
 /// comparator B is the system clock, happens every TICK_TIME
 ISR(TIMER1_COMPB_vect) {
 	// set output compare register to the next clock tick
@@ -56,14 +54,14 @@ ISR(TIMER1_COMPB_vect) {
 		clock_counter_10ms -= 10;
 		clock_flag_10ms = 1;
 
-		clock_counter_250ms += 1;
+		clock_counter_250ms++;
 		if (clock_counter_250ms >= 25) {
-			clock_counter_250ms -= 25;
+			clock_counter_250ms = 0;
 			clock_flag_250ms = 1;
 
-			clock_counter_1s += 1;
+			clock_counter_1s++;
 			if (clock_counter_1s >= 4) {
-				clock_counter_1s -= 4;
+				clock_counter_1s = 0;
 				clock_flag_1s = 1;
 			}
 		}
@@ -83,7 +81,6 @@ ISR(TIMER1_COMPA_vect) {
 
 		// disable this interrupt. if we set a new timeout, it will be re-enabled when appropriate
 		TIMSK1 &= ~MASK(OCIE1A);
-		timer1_compa_deferred_enable = 0;
 		
 		// stepper tick
 		queue_step();
@@ -92,19 +89,7 @@ ISR(TIMER1_COMPA_vect) {
 		#ifdef DEBUG_LED_PIN
 			WRITE(DEBUG_LED_PIN, 0);
 		#endif
-		
-		// Enable the timer1_compa interrupt, if needed, 
-		// but only do it after disabling global interrupts.
-		// This will cause push any possible timer1a interrupt
-		// to the far side of the return, protecting the 
-		// stack from recursively clobbering memory.
-		
-		cli();
-		CLI_SEI_BUG_MEMORY_BARRIER();
-		
-		if (timer1_compa_deferred_enable) {
-			TIMSK1 |= MASK(OCIE1A);
-		}
+
 		return;
 	}
 
@@ -136,63 +121,62 @@ void timer_init()
 }
 
 #ifdef	HOST
-/// specify how long until the step timer should fire
+/*! Specify how long until the step timer should fire.
+	\param delay in CPU ticks
+
+	This enables the step interrupt, but also disables interrupts globally.
+	So, if you use it from inside the step interrupt, make sure to do so
+	as late as possible. If you use it from outside the step interrupt,
+	do a sei() after it to make the interrupt actually fire.
+*/
 void setTimer(uint32_t delay)
 {
 	// save interrupt flag
 	uint8_t sreg = SREG;
 	uint16_t step_start = 0;
-	
-	// disable interrupts
-	cli();
-	CLI_SEI_BUG_MEMORY_BARRIER();
-	
+
 	// re-enable clock interrupt in case we're recovering from emergency stop
 	TIMSK1 |= MASK(OCIE1B);
 
-	if (delay > 0) {
+	// if the delay is too small use a minimum delay so that there is time
+	// to set everything up before the timer expires.
 
-		// if the delay is too small use a minimum delay so that there is time
-		// to set everything up before the timer expires.
+	if (delay < 17 )
+		delay = 17;
 
-		if (delay < 17 )
-			delay = 17;
-		
-		// Assume all steps belong to one move. Within one move the delay is
-		// from one step to the next one, which should be more or less the same
-		// as from one step interrupt to the next one. The last step interrupt happend
-		// at OCR1A, so start delay from there.
-		step_start = OCR1A;
-		if (next_step_time == 0) {
-			// new move, take current time as start value
-			step_start = TCNT1;
-		}
-
-		next_step_time = delay;
-		if (next_step_time < 65536) {
-			// set the comparator directly to the next real step
-			OCR1A = (next_step_time + step_start) & 0xFFFF;
-		}
-		else if (next_step_time < 75536) {
-			// Next comparator interrupt would have to trigger another
-			// interrupt within a short time (possibly within 1 cycle).
-			// Avoid the impossible by firing the interrupt earlier.
-			OCR1A = (step_start - 10000) & 0xFFFF;
-			next_step_time += 10000;
-		}
-		else {
-			OCR1A = step_start;
-		}
-
-		// Defer the enabling of the timer1_CompA interrupts.
-		
-		timer1_compa_deferred_enable = 1;
-	} else {
-		// flag: move has ended
-		next_step_time = 0;
-		TIMSK1 &= ~MASK(OCIE1A);
-		timer1_compa_deferred_enable = 0;
+	// Assume all steps belong to one move. Within one move the delay is
+	// from one step to the next one, which should be more or less the same
+	// as from one step interrupt to the next one. The last step interrupt happend
+	// at OCR1A, so start delay from there.
+	step_start = OCR1A;
+	if (next_step_time == 0) {
+		// new move, take current time as start value
+		step_start = TCNT1;
 	}
+
+	next_step_time = delay;
+	if (next_step_time < 65536) {
+		// set the comparator directly to the next real step
+		OCR1A = (next_step_time + step_start) & 0xFFFF;
+	}
+	else if (next_step_time < 75536) {
+		// Next comparator interrupt would have to trigger another
+		// interrupt within a short time (possibly within 1 cycle).
+		// Avoid the impossible by firing the interrupt earlier.
+		OCR1A = (step_start - 10000) & 0xFFFF;
+		next_step_time += 10000;
+	}
+	else {
+		OCR1A = step_start;
+	}
+
+	// Enable this interrupt, but only do it after disabling
+	// global interrupts. This will cause push any possible
+	// timer1a interrupt to the far side of the return, protecting the 
+	// stack from recursively clobbering memory.
+	cli();
+	CLI_SEI_BUG_MEMORY_BARRIER();
+	TIMSK1 |= MASK(OCIE1A);
 
 	// restore interrupt flag
 	MEMORY_BARRIER();

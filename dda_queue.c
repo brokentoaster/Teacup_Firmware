@@ -32,12 +32,17 @@ uint8_t	mb_tail = 0;
 /// once writing starts in interrupts on a specific slot, the
 /// slot will only be modified in interrupts until the slot is
 /// is no longer live.
+/// The size does not need to be a power of 2 anymore!
 DDA movebuffer[MOVEBUFFER_SIZE] __attribute__ ((__section__ (".bss")));
 
 /// check if the queue is completely full
 uint8_t queue_full() {
 	MEMORY_BARRIER();
-	return (((mb_tail - mb_head - 1) & (MOVEBUFFER_SIZE - 1)) == 0)?255:0;
+	if (mb_tail > mb_head) {
+		return ((mb_tail - mb_head - 1) == 0) ? 255 : 0;
+	} else {
+		return ((mb_tail + MOVEBUFFER_SIZE - mb_head - 1) == 0) ? 255 : 0;
+	}
 }
 
 /// check if the queue is completely empty
@@ -69,13 +74,10 @@ void queue_step() {
 				current_movebuffer->live = current_movebuffer->waitfor_temp = 0;
 				serial_writestr_P(PSTR("Temp achieved\n"));
 			}
-
-			#if STEP_INTERRUPT_INTERRUPTIBLE
-				sei();
-			#endif
 		}
 		else {
-			// NOTE: dda_step makes this interrupt interruptible after steps have been sent but before new speed is calculated.
+			// NOTE: dda_step makes this interrupt interruptible for some time,
+			//       see STEP_INTERRUPT_INTERRUPTIBLE.
 			dda_step(current_movebuffer);
 		}
 	}
@@ -90,6 +92,10 @@ void queue_step() {
 /// \note this function waits for space to be available if necessary, check queue_full() first if waiting is a problem
 /// This is the only function that modifies mb_head and it always called from outside an interrupt.
 void enqueue(TARGET *t) {
+	enqueue_home(t, 0, 0);
+}
+
+void enqueue_home(TARGET *t, uint8_t endstop_check, uint8_t endstop_stop_cond) {
 	// don't call this function when the queue is full, but just in case, wait for a move to complete and free up the space for the passed target
 	while (queue_full())
 		delay(WAITING_DELAY);
@@ -101,6 +107,8 @@ void enqueue(TARGET *t) {
 	
 	if (t != NULL) {
 		dda_create(new_movebuffer, t);
+		new_movebuffer->endstop_check = endstop_check;
+		new_movebuffer->endstop_stop_cond = endstop_stop_cond;
 	}
 	else {
 		// it's a wait for temp
@@ -124,19 +132,10 @@ void enqueue(TARGET *t) {
 	SREG = save_reg;
 	
 	if (isdead) {
-		timer1_compa_deferred_enable = 0;
 		next_move();
-		if (timer1_compa_deferred_enable) {
-			uint8_t save_reg = SREG;
-			cli();
-			CLI_SEI_BUG_MEMORY_BARRIER();
-			
-			TIMSK1 |= MASK(OCIE1A);
-			
-			MEMORY_BARRIER();
-			SREG = save_reg;
-		}
-	}	
+		// Compensate for the cli() in setTimer().
+		sei();
+	}
 }
 
 /// go to the next move.
@@ -168,9 +167,6 @@ void next_move() {
 			dda_start(current_movebuffer);
 		}
 	} 
-	if (queue_empty())
-		setTimer(0);
-
 }
 
 /// DEBUG - print queue.
@@ -180,7 +176,7 @@ void print_queue() {
 }
 
 /// dump queue for emergency stop.
-/// \todo effect on startpoint/current_position is undefined!
+/// \todo effect on startpoint is undefined!
 void queue_flush() {
 	// Since the timer interrupt is disabled before this function
 	// is called it is not strictly necessary to write the variables

@@ -1,8 +1,9 @@
 /* Notice to developers: this file is intentionally included twice. */
 
 /** \file
-  \brief Sample configuration file for the GEN6-Board sold by Camiel Gubbels.
-  http://www.reprap.org/wiki/Generation_6_Electronics
+	\brief Sample Configuration
+
+	\note this sample uses AIO0 for both X_STEP and thermistor, and is intended to be an example only!
 */
 
 /*
@@ -30,14 +31,16 @@
 	If you want to port this to a new chip, start off with arduino.h and see how you go.
 */
 #ifndef __AVR_ATmega644P__
-	#error GEN6 has a 644P! set your cpu type in Makefile!
+  #ifndef __AVR_ATmega644__
+	  #error GEN7 has a 644 or a 644P! set your cpu type in Makefile!
+  #endif
 #endif
 
 /** \def F_CPU
 	CPU clock rate
 */
 #ifndef	F_CPU
-	#define	F_CPU	16000000L
+	#define	F_CPU	20000000L
 #endif
 
 /** \def HOST
@@ -65,12 +68,12 @@
 
 	valid range = 20 to 4'0960'000 (0.02 to 40960 steps/mm)
 */
-#define	STEPS_PER_M_X					(5000*8)
-#define	STEPS_PER_M_Y					(5000*8)
-#define	STEPS_PER_M_Z					(160000*8)
+#define	STEPS_PER_M_X					40000
+#define	STEPS_PER_M_Y					40000
+#define	STEPS_PER_M_Z					320000
 
 /// http://blog.arcol.hu/?p=157 may help with this one
-#define	STEPS_PER_M_E					(160000*8)
+#define	STEPS_PER_M_E					96271
 
 
 /*
@@ -81,10 +84,10 @@
 */
 
 /// used for G0 rapid moves and as a cap for all other feedrates
-#define	MAXIMUM_FEEDRATE_X		200
-#define	MAXIMUM_FEEDRATE_Y		200
-#define	MAXIMUM_FEEDRATE_Z		100
-#define	MAXIMUM_FEEDRATE_E		200
+#define	MAXIMUM_FEEDRATE_X			2000
+#define	MAXIMUM_FEEDRATE_Y			2000
+#define	MAXIMUM_FEEDRATE_Z			200
+#define	MAXIMUM_FEEDRATE_E			2000
 
 /// used when searching endstops and as default feedrate
 #define	SEARCH_FEEDRATE_X			50
@@ -99,7 +102,7 @@
 // #define	SLOW_HOMING
 
 /// this is how many steps to suck back the filament by when we stop. set to zero to disable
-#define	E_STARTSTOP_STEPS			20
+#define	E_STARTSTOP_STEPS			289
 
 /**
 	Soft axis limits, in mm.
@@ -160,7 +163,7 @@
 		The Bresenham algorithm is great for drawing lines, but not so good for steppers - In the case where X steps 3 times to Y's two, Y experiences massive jitter as it steps in sync with X every 2 out of 3 X steps. This is a worst-case, but the problem exists for most non-45/90 degree moves. At higher speeds, the jitter /will/ cause position loss and unnecessary vibration.
 		This algorithm instead calculates when a step occurs on any axis, and sets the timer to that value.
 
-		\TODO figure out how to add acceleration to this algorithm
+		// TODO: figure out how to add acceleration to this algorithm
 */
 // #define ACCELERATION_TEMPORAL
 
@@ -187,14 +190,16 @@
 //#define USE_INTERNAL_PULLUPS
 
 /*
-	this is the official GEN6 reprap motherboard pinout
+	user defined pins
+	adjust to suit your electronics,
+	or adjust your electronics to suit this
 */
 
-#define	X_STEP_PIN						DIO15
+#define	X_STEP_PIN						DIO19
 #define	X_DIR_PIN							DIO18
-#define	X_MIN_PIN							DIO20
+#define	X_MIN_PIN							DIO7
 //#define	X_MAX_PIN							xxxx
-#define	X_ENABLE_PIN					DIO19
+//#define	X_ENABLE_PIN					xxxx
 //#define	X_INVERT_DIR
 //#define	X_INVERT_MIN
 //#define	X_INVERT_MAX
@@ -202,33 +207,33 @@
 
 #define	Y_STEP_PIN						DIO23
 #define	Y_DIR_PIN							DIO22
-#define	Y_MIN_PIN							DIO25
+#define	Y_MIN_PIN							DIO5
 //#define	Y_MAX_PIN							xxxx
-#define	Y_ENABLE_PIN					DIO24
+//#define	Y_ENABLE_PIN					xxxx
 //#define	Y_INVERT_DIR
 //#define	Y_INVERT_MIN
 //#define	Y_INVERT_MAX
 //#define	Y_INVERT_ENABLE
 
-#define	Z_STEP_PIN						DIO27
-#define	Z_DIR_PIN							DIO28
-#define	Z_MIN_PIN							DIO30
+#define	Z_STEP_PIN						DIO26
+#define	Z_DIR_PIN							DIO25
+#define	Z_MIN_PIN							DIO1
 //#define	Z_MAX_PIN							xxxx
-#define	Z_ENABLE_PIN					DIO29
+//#define	Z_ENABLE_PIN					xxxx
 //#define	Z_INVERT_DIR
 //#define	Z_INVERT_MIN
 //#define	Z_INVERT_MAX
 //#define	Z_INVERT_ENABLE
 
-#define	E_STEP_PIN						DIO4
-#define	E_DIR_PIN							DIO2
-#define E_ENABLE_PIN					DIO3
+#define	E_STEP_PIN						DIO28
+#define	E_DIR_PIN							DIO27
+//#define E_ENABLE_PIN
 //#define	E_INVERT_DIR
 //#define	E_INVERT_ENABLE
 
-//#define	PS_ON_PIN							xxxx
-//#define	STEPPER_ENABLE_PIN		xxxx
-//#define	STEPPER_INVERT_ENABLE
+#define	PS_ON_PIN							DIO15
+#define STEPPER_ENABLE_PIN		DIO24
+#define	STEPPER_INVERT_ENABLE
 
 
 
@@ -242,7 +247,7 @@
 	TEMP_HYSTERESIS: actual temperature must be target +/- hysteresis before target temperature can be achieved.
 	Unit is degree Celsius.
 */
-#define	TEMP_HYSTERESIS				5
+#define	TEMP_HYSTERESIS			20
 /**
 	TEMP_RESIDENCY_TIME: actual temperature must be close to target for this long before target is achieved
 
@@ -262,9 +267,7 @@
 *                                                                           *
 * Define your temperature sensors here                                      *
 *                                                                           *
-* If your temperature sensor has no associated heater, enter '255' as the   *
-*   heater index. Unassociated temperature sensors are still read, but they *
-*   do not affect firmware operation                                        *
+* for GEN3 set temp_type to TT_INTERCOM and temp_pin to 0                   *
 *                                                                           *
 * Types are same as TEMP_ list above- TT_MAX6675, TT_THERMISTOR, TT_AD595,  *
 *   TT_PT100, TT_INTERCOM, TT_NONE. See list in temp.c.                     *
@@ -276,7 +279,16 @@
 #endif
 
 //                 name       type          pin		additional
-DEFINE_TEMP_SENSOR(extruder, TT_THERMISTOR, PINA5,	THERMISTOR_EXTRUDER)
+//DEFINE_TEMP_SENSOR(extruder,	TT_THERMISTOR,		0,	THERMISTOR_EXTRUDER)
+// DEFINE_TEMP_SENSOR(bed,				TT_THERMISTOR,	1,	THERMISTOR_EXTRUDER)
+// "noheater" is a special name for a sensor which doesn't have a heater.
+// Use "M105 P#" to read it, where # is a zero-based index into this list.
+// DEFINE_TEMP_SENSOR(noheater,				TT_THERMISTOR,	1,	0)
+
+// to get both thermistors working make sure to use an appropriate 'ThermistorTable.h' file! 
+// See 'ThermistorTable.gen7.h' for an example
+DEFINE_TEMP_SENSOR(extruder, TT_THERMISTOR, PINA1, THERMISTOR_EXTRUDER)
+DEFINE_TEMP_SENSOR(bed, TT_THERMISTOR, PINA2, THERMISTOR_BED)
 
 
 
@@ -320,18 +332,17 @@ DEFINE_TEMP_SENSOR(extruder, TT_THERMISTOR, PINA5,	THERMISTOR_EXTRUDER)
 #endif
 
 //               name      port   pin    pwm
-// DEFINE_HEATER(extruder,   PORTD, PIND6, OCR2B)
-DEFINE_HEATER(extruder, PD6)
+DEFINE_HEATER(extruder,	PB4)
+DEFINE_HEATER(bed, PB3)
 
 /// and now because the c preprocessor isn't as smart as it could be,
 /// uncomment the ones you've listed above and comment the rest.
-/// \NOTE these are used to enable various capability-specific chunks of code, you do NOT need to create new entries unless you are adding new capabilities elsewhere in the code!
+/// NOTE: these are used to enable various capability-specific chunks of code, you do NOT need to create new entries unless you are adding new capabilities elsewhere in the code!
 /// so if you list a bed above, uncomment HEATER_BED, but if you list a chamber you do NOT need to create HEATED_CHAMBER
 /// I have searched high and low for a way to make the preprocessor do this for us, but so far I have not found a way.
 
 #define	HEATER_EXTRUDER HEATER_extruder
-// #define HEATER_BED HEATER_bed
-// #define HEATER_FAN HEATER_fan
+#define HEATER_BED HEATER_bed
 
 
 
@@ -381,9 +392,9 @@ DEFINE_HEATER(extruder, PD6)
 // #define	DEBUG
 
 /** \def BANG_BANG
-	BANG_BANG
-		drops PID loop from heater control, reduces code size significantly (1300 bytes!)
-		may allow DEBUG on '168
+BANG_BANG
+drops PID loop from heater control, reduces code size significantly (1300 bytes!)
+may allow DEBUG on '168
 */
 // #define	BANG_BANG
 /** \def BANG_BANG_ON
@@ -416,7 +427,7 @@ PWM value for 'off'
 */
 // #define USE_WATCHDOG
 
-/*
+/**
 	analog subsystem stuff
 	REFERENCE - which analog reference to use. see analog.h for choices
 */
@@ -425,16 +436,17 @@ PWM value for 'off'
 /** \def STEP_INTERRUPT_INTERRUPTIBLE
 	this option makes the step interrupt interruptible (nested).
 	this should help immensely with dropped serial characters, but may also make debugging infuriating due to the complexities arising from nested interrupts
+	\note disable this option if you're using a '168 or for some reason your ram usage is above 90%. This option hugely increases likelihood of stack smashing.
 */
 #define		STEP_INTERRUPT_INTERRUPTIBLE	1
 
-/*
+/**
 	temperature history count. This is how many temperature readings to keep in order to calculate derivative in PID loop
 	higher values make PID derivative term more stable at the expense of reaction time
 */
 #define	TH_COUNT					8
 
-// this is the scaling of internally stored PID values. 1024L is a good value
+/// this is the scaling of internally stored PID values. 1024L is a good value
 #define	PID_SCALE						1024L
 
 /** \def ENDSTOP_STEPS

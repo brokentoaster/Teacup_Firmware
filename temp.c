@@ -33,6 +33,10 @@
 #include	"analog.h"
 #endif
 
+#ifdef TEMP_NONE
+// no actual sensor, just store the target temp
+#endif
+
 typedef enum {
 	PRESENT,
 	TCOPEN
@@ -94,6 +98,12 @@ void temp_init() {
 			case TT_INTERCOM:
 				intercom_init();
 				send_temperature(0, 0);
+				break;
+		#endif
+
+		#ifdef  TEMP_NONE
+			case TT_NONE:
+				// nothing to do
 				break;
 		#endif
 
@@ -253,6 +263,15 @@ void temp_sensor_tick() {
 					break;
 				#endif	/* TEMP_INTERCOM */
 
+				#ifdef	TEMP_NONE
+				case TT_NONE:
+					temp_sensors_runtime[i].last_read_temp =
+					  temp_sensors_runtime[i].target_temp; // for get_temp()
+					temp_sensors_runtime[i].next_read_time = 25;
+
+					break;
+				#endif	/* TEMP_NONE */
+
 				#ifdef	TEMP_DUMMY
 				case TT_DUMMY:
 					temp = temp_sensors_runtime[i].last_read_temp;
@@ -281,7 +300,7 @@ void temp_sensor_tick() {
 		}
 
 		if (temp_sensors[i].heater < NUM_HEATERS) {
-			heater_tick(temp_sensors[i].heater, i, temp_sensors_runtime[i].last_read_temp, temp_sensors_runtime[i].target_temp);
+			heater_tick(temp_sensors[i].heater, temp_sensors[i].temp_type, temp_sensors_runtime[i].last_read_temp, temp_sensors_runtime[i].target_temp);
 		}
 	}
 }
@@ -349,7 +368,11 @@ void temp_print(temp_sensor_t index) {
 
 	c = (temp_sensors_runtime[index].last_read_temp & 3) * 25;
 
-	sersendf_P(PSTR("\nT:%u.%u"), temp_sensors_runtime[index].last_read_temp >> 2, c);
+	#if REPRAP_HOST_COMPATIBILITY >= 20110509
+		sersendf_P(PSTR("T:%u.%u"), temp_sensors_runtime[index].last_read_temp >> 2, c);
+	#else
+		sersendf_P(PSTR("\nT:%u.%u"), temp_sensors_runtime[index].last_read_temp >> 2, c);
+	#endif
 	#ifdef HEATER_BED
 		uint8_t b = 0;
 		b = (temp_sensors_runtime[HEATER_BED].last_read_temp & 3) * 25;

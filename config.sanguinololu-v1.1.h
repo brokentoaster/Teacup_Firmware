@@ -1,9 +1,7 @@
 /* Notice to developers: this file is intentionally included twice. */
 
 /** \file
-	\brief Sample Configuration
-
-	\note this sample uses AIO0 for both X_STEP and thermistor, and is intended to be an example only!
+	\brief Sanguinololu configuration.
 */
 
 /*
@@ -30,6 +28,9 @@
 
 	If you want to port this to a new chip, start off with arduino.h and see how you go.
 */
+#if ! ( defined (__AVR_ATmega644P__) || defined (__AVR_ATmega644PA__) )
+	#error Sanguinololu has a 644P/644PA! set your cpu type in Makefile!
+#endif
 
 /** \def F_CPU
 	CPU clock rate
@@ -48,17 +49,32 @@
 		All numbers are fixed point integers, so no more than 3 digits to the right of the decimal point, please :-)
 */
 
-/// calculate these values appropriate for your machine
-/// for threaded rods, this is (steps motor per turn) / (pitch of the thread)
-/// for belts, this is (steps per motor turn) / (number of gear teeth) / (belt module)
-/// half-stepping doubles the number, quarter stepping requires * 4, etc.
-/// valid range = 0.020 to 4194.303
-#define	STEPS_PER_MM_X				320.000
-#define	STEPS_PER_MM_Y				320.000
-#define	STEPS_PER_MM_Z				320.000
+/** \def STEPS_PER_M
+	steps per meter ( = steps per mm * 1000 )
+
+	calculate these values appropriate for your machine
+
+	for threaded rods, this is
+		(steps motor per turn) / (pitch of the thread) * 1000
+
+	for belts, this is
+		(steps per motor turn) / (number of gear teeth) / (belt module) * 1000
+
+	half-stepping doubles the number, quarter stepping requires * 4, etc.
+
+	valid range = 20 to 4'0960'000 (0.02 to 40960 steps/mm)
+*/
+#define MICROSTEPPING_X				16.0
+#define MICROSTEPPING_Y				16.0
+#define MICROSTEPPING_Z				16.0
+#define MICROSTEPPING_E				4.0
+
+#define	STEPS_PER_M_X					(5023*MICROSTEPPING_X)
+#define	STEPS_PER_M_Y					(5023*MICROSTEPPING_Y)
+#define	STEPS_PER_M_Z					(416699*MICROSTEPPING_Z)
 
 /// http://blog.arcol.hu/?p=157 may help with this one
-#define	STEPS_PER_MM_E				320.000
+#define	STEPS_PER_M_E					(2759*MICROSTEPPING_E)
 
 
 /*
@@ -80,29 +96,29 @@
 #define	SEARCH_FEEDRATE_Z			50
 // no SEARCH_FEEDRATE_E, as E can't be searched
 
-/// used when returning towards home position
-/// search feedrate is very slow and maximum may be unobtainable due to
-/// acceleration not being used in the homing routines.
-#define HOME_FEEDRATE_X			100
-#define HOME_FEEDRATE_Y			100
-#define HOME_FEEDRATE_Z			75
+/** \def SLOW_HOMING
+	wether to search the home point slowly
+		With some endstop configurations, like when probing for the surface of a PCB, you can't deal with overrunning the endstop. In such a case, uncomment this definition.
+*/
+// #define	SLOW_HOMING
 
 /// this is how many steps to suck back the filament by when we stop. set to zero to disable
 #define	E_STARTSTOP_STEPS			20
 
+
 /**
-	Soft axis limits, in mm
-	undefine if you don't want to use them
+	Soft axis limits, in mm.
+	Define them to your machine's size relative to what your host considers to be the origin.
 */
 
-#define	X_MIN			0.0
-#define	X_MAX			200.0
+//#define	X_MIN			0.0
+//#define	X_MAX			200.0
 
-#define	Y_MIN			0.0
-#define	Y_MAX			200.0
+//#define	Y_MIN			0.0
+//#define	Y_MAX			200.0
 
-#define	Z_MIN			0.0
-#define	Z_MAX			140.0
+//#define	Z_MIN			0.0
+//#define	Z_MAX			140.0
 
 /**	\def E_ABSOLUTE
 	Some G-Code creators produce relative length commands for the extruder, others absolute ones. G-Code using absolute lengths can be recognized when there are G92 E0 commands from time to time. If you have G92 E0 in your G-Code, define this flag.
@@ -133,9 +149,11 @@
 */
 #define ACCELERATION_RAMPING
 
-/// how fast to accelerate when using ACCELERATION_RAMPING, given in mm/s^2
-/// decimal allowed, useful range 1. to 10'000, typical range 10. to 100.
-#define ACCELERATION 10.
+/** \def ACCELERATION
+	how fast to accelerate when using ACCELERATION_RAMPING.
+		given in mm/s^2, decimal allowed, useful range 1. to 10'000. Start with 10. for milling (high precision) or 1000. for printing
+*/
+#define ACCELERATION 1000.
 
 /** \def ACCELERATION_TEMPORAL
 	temporal step algorithm
@@ -179,9 +197,9 @@
 	or adjust your electronics to suit this
 */
 
-#define	X_STEP_PIN						AIO0
-#define	X_DIR_PIN							AIO1
-#define	X_MIN_PIN							AIO2
+#define	X_STEP_PIN						DIO15
+#define	X_DIR_PIN							DIO21
+#define	X_MIN_PIN							DIO18
 //#define	X_MAX_PIN							xxxx
 //#define	X_ENABLE_PIN					xxxx
 //#define	X_INVERT_DIR
@@ -189,9 +207,9 @@
 //#define	X_INVERT_MAX
 //#define	X_INVERT_ENABLE
 
-#define	Y_STEP_PIN						AIO3
-#define	Y_DIR_PIN							AIO4
-#define	Y_MIN_PIN							AIO5
+#define	Y_STEP_PIN						DIO22
+#define	Y_DIR_PIN							DIO23
+#define	Y_MIN_PIN							DIO19
 //#define	Y_MAX_PIN							xxxx
 //#define	Y_ENABLE_PIN					xxxx
 //#define	Y_INVERT_DIR
@@ -199,9 +217,9 @@
 //#define	Y_INVERT_MAX
 //#define	Y_INVERT_ENABLE
 
-#define	Z_STEP_PIN						DIO2
-#define	Z_DIR_PIN							DIO3
-#define	Z_MIN_PIN							DIO4
+#define	Z_STEP_PIN						DIO3
+#define	Z_DIR_PIN							DIO2
+#define	Z_MIN_PIN							DIO20
 //#define	Z_MAX_PIN							xxxx
 //#define	Z_ENABLE_PIN					xxxx
 //#define	Z_INVERT_DIR
@@ -209,13 +227,18 @@
 //#define	Z_INVERT_MAX
 //#define	Z_INVERT_ENABLE
 
-#define	E_STEP_PIN						DIO7
-#define	E_DIR_PIN							DIO8
+#define	E_STEP_PIN						DIO1
+#define	E_DIR_PIN							DIO0
 //#define E_ENABLE_PIN					xxxx
 //#define	E_INVERT_DIR
+//#define	E_INVERT_ENABLE
 
 #define	PS_ON_PIN							DIO9
+#define	STEPPER_ENABLE_PIN		DIO4
+//#define	STEPPER_INVERT_ENABLE
 
+//#define	SD_CARD_DETECT		 		DIO2
+//#define	SD_WRITE_PROTECT			DIO3
 
 
 /***************************************************************************\
@@ -236,12 +259,13 @@
 */
 #define	TEMP_RESIDENCY_TIME		60
 
-/// which temperature sensors are you using? (intercom is the gen3-style separate extruder board)
+/// which temperature sensors are you using? List every type of sensor you use here once, to enable the appropriate code. Intercom is the gen3-style separate extruder board.
 // #define	TEMP_MAX6675
 #define	TEMP_THERMISTOR
 // #define	TEMP_AD595
 // #define	TEMP_PT100
 // #define	TEMP_INTERCOM
+// #define	TEMP_NONE
 
 /***************************************************************************\
 *                                                                           *
@@ -250,7 +274,7 @@
 * for GEN3 set temp_type to TT_INTERCOM and temp_pin to 0                   *
 *                                                                           *
 * Types are same as TEMP_ list above- TT_MAX6675, TT_THERMISTOR, TT_AD595,  *
-*   TT_PT100, TT_INTERCOM. See list in temp.c.                              *
+*   TT_PT100, TT_INTERCOM, TT_NONE. See list in temp.c.                     *
 *                                                                           *
 \***************************************************************************/
 
@@ -259,8 +283,8 @@
 #endif
 
 //                 name       type          pin		additional
-DEFINE_TEMP_SENSOR(extruder,	TT_THERMISTOR,		0,	THERMISTOR_EXTRUDER)
-// DEFINE_TEMP_SENSOR(bed,				TT_THERMISTOR,	1,	THERMISTOR_EXTRUDER)
+DEFINE_TEMP_SENSOR(extruder,	TT_THERMISTOR,	AIO7_PIN,	THERMISTOR_EXTRUDER)
+DEFINE_TEMP_SENSOR(bed,		TT_THERMISTOR,	AIO6_PIN,	THERMISTOR_EXTRUDER)
 // "noheater" is a special name for a sensor which doesn't have a heater.
 // Use "M105 P#" to read it, where # is a zero-based index into this list.
 // DEFINE_TEMP_SENSOR(noheater,				TT_THERMISTOR,	1,	0)
@@ -296,6 +320,10 @@ DEFINE_TEMP_SENSOR(extruder,	TT_THERMISTOR,		0,	THERMISTOR_EXTRUDER)
 *                                                                           *
 * Some common names are 'extruder', 'bed', 'fan', 'motor'                   *
 *                                                                           *
+* A milling spindle can also be defined as a heater. Attach it to a         *
+* temperature sensor of TT_NONE, then you can control the spindle's rpm     *
+* via temperature commands. M104 S1..255 for spindle on, M104 S0 for off.   *
+*                                                                           *
 \***************************************************************************/
 
 #ifndef DEFINE_HEATER
@@ -303,8 +331,8 @@ DEFINE_TEMP_SENSOR(extruder,	TT_THERMISTOR,		0,	THERMISTOR_EXTRUDER)
 #endif
 
 //               name      port   pin    pwm
-DEFINE_HEATER(extruder,	PB3)
-DEFINE_HEATER(bed,			PB4)
+DEFINE_HEATER(extruder,	PD5)
+DEFINE_HEATER(bed,	PD6)
 // DEFINE_HEATER(fan,			PORTB, PINB4, OCR0B)
 // DEFINE_HEATER(chamber,	PORTD, PIND7, OCR2A)
 // DEFINE_HEATER(motor,		PORTD, PIND6, OCR2B)
@@ -334,7 +362,8 @@ DEFINE_HEATER(bed,			PB4)
 	Undefine it for best human readability, set it to an old date for compatibility with hosts before August 2010
 */
 // #define REPRAP_HOST_COMPATIBILITY 19750101
-#define REPRAP_HOST_COMPATIBILITY 20100806
+// #define REPRAP_HOST_COMPATIBILITY 20100806
+// #define REPRAP_HOST_COMPATIBILITY 20110509
 // #define REPRAP_HOST_COMPATIBILITY <date of next RepRap Host compatibility break>
 
 /**
@@ -391,7 +420,7 @@ PWM value for 'off'
 
 /** \def DC_EXTRUDER
 	DC extruder
-		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above
+		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above.
 */
 // #define	DC_EXTRUDER HEATER_motor
 // #define	DC_EXTRUDER_PWM	180
@@ -422,6 +451,12 @@ PWM value for 'off'
 
 /// this is the scaling of internally stored PID values. 1024L is a good value
 #define	PID_SCALE						1024L
+
+/** \def ENDSTOP_STEPS
+	number of steps to run into the endstops intentionally
+		As Endstops trigger false alarm sometimes, Teacup debounces them by counting a number of consecutive positives. Valid range is 1...255. Use 4 or less for reliable endstops, 8 or even more for flaky ones.
+*/
+#define	ENDSTOP_STEPS	4
 
 
 
