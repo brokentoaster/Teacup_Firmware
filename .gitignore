@@ -24,4 +24,5 @@ ThermistorTable.h
 sim
 doc
 *xcode*
-
+.DS_Store
+*/.DS_Store
