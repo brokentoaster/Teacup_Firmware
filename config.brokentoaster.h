@@ -420,7 +420,7 @@ DEFINE_TEMP_SENSOR(noheater,	TT_INTERCOM,	0,		0)
 		Needs to be a power of 2 as next_move() and enque_home() use a
 		bitwise and of the move_buffer[] index with MOVEBUFFER_SIZE-1
 */
-#define	MOVEBUFFER_SIZE	64
+#define	MOVEBUFFER_SIZE	32
 
 /** \def DC_EXTRUDER
 	DC extruder
