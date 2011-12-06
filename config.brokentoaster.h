@@ -113,7 +113,7 @@
 /**	\def E_ABSOLUTE
 	Some G-Code creators produce relative length commands for the extruder, others absolute ones. G-Code using absolute lengths can be recognized when there are G92 E0 commands from time to time. If you have G92 E0 in your G-Code, define this flag.
 */
-#define E_ABSOLUTE
+//#define E_ABSOLUTE
 
 
 
@@ -416,8 +416,11 @@ DEFINE_TEMP_SENSOR(noheater,	TT_INTERCOM,	0,		0)
 		short consecutive moves, as each move takes a bunch of math
 		(hence time) to set up so a longer buffer allows more of the
 		math to be done during preceding longer moves
+
+		Needs to be a power of 2 as next_move() and enque_home() use a
+		bitwise and of the move_buffer[] index with MOVEBUFFER_SIZE-1
 */
-#define	MOVEBUFFER_SIZE	8
+#define	MOVEBUFFER_SIZE	64
 
 /** \def DC_EXTRUDER
 	DC extruder

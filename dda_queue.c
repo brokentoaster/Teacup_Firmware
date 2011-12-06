@@ -33,6 +33,7 @@ uint8_t	mb_tail = 0;
 /// slot will only be modified in interrupts until the slot is
 /// is no longer live.
 /// The size does not need to be a power of 2 anymore!
+///  -- not true see next_move() and enque_home()
 DDA movebuffer[MOVEBUFFER_SIZE] __attribute__ ((__section__ (".bss")));
 
 /// check if the queue is completely full
